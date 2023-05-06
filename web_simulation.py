@@ -10,18 +10,19 @@ st.set_page_config(layout="wide")
 file = st.file_uploader("Upload investment universe & price data", type=['xlsx', 'xls', 'csv'])
 st.warning('Upload data.')
 
+
+@st.cache
+def load_data(file_path):
+    df = pd.read_excel(file_path, sheet_name="data",
+                       names=None, dtype={'Date': datetime}, index_col=0, header=2)
+
+    df2 = pd.read_excel(file_path, sheet_name="data",
+                        names=None, index_col=0, header=0, nrows=1)
+
+    return df, df2
+
+
 if file is not None:
-
-    @st.cache
-    def load_data(file_path):
-        df = pd.read_excel(file_path, sheet_name="data",
-                           names=None, dtype={'Date': datetime}, index_col=0, header=2)
-
-        df2 = pd.read_excel(file_path, sheet_name="data",
-                           names=None, index_col=0, header=0, nrows=1)
-
-        return df, df2
-
 
     price, weight = load_data(file)
 
@@ -29,12 +30,6 @@ if file is not None:
     select = st.multiselect('Input Assets', price_list, price_list)
     input_list = price.columns[price.columns.isin(select)]
     input_price = price[input_list]
-
-    @st.cache
-    def summit(x):
-        return x
-
-    summit = summit(1)
 
 
     if (st.button('Summit') or ('input_list' in st.session_state)):
@@ -57,7 +52,7 @@ if file is not None:
 
             with col42:
 
-                option1 = st.selectbox(
+                freq_option = st.selectbox(
                     'Data Frequency', ('Daily', 'Monthly'))
 
             with col43:
@@ -68,19 +63,18 @@ if file is not None:
 
                 commission = st.number_input('Commission(%)')
 
-            if option1 == 'Daily':
+            if freq_option == 'Daily':
                 daily = True
                 monthly = False
                 annualization = 365
                 freq = 1
 
-            if option1 == 'Monthly':
+            if freq_option == 'Monthly':
                 daily = False
                 monthly = True
                 annualization = 12
                 freq = 2
-            #
-            st.session_state.input_list = input_list
+
 
             if daily == True:
                 st.session_state.input_price = input_price[
@@ -92,15 +86,20 @@ if file is not None:
                                                            & (input_price.index.is_month_end == True)].dropna()
 
 
+
+            st.session_state.input_list = input_list
             st.session_state.input_price = pd.concat([st.session_state.input_price,
-                                                      pd.DataFrame({'Cash': [1]*len(st.session_state.input_price)},
+                                                      pd.DataFrame({'Cash': [100]*len(st.session_state.input_price)},
                                                       index=st.session_state.input_price.index)], axis=1)
+
+            st.write(" ")
+            st.write("Input Data")
+            st.dataframe(st.session_state.input_price)
+
 
             col1, col2, col3 = st.columns([1, 1, 1])
 
             slider = pd.Series()
-            #
-            # st.write(input_price.columns)
 
             st.write("Allocation(%)")
 
@@ -135,16 +134,13 @@ if file is not None:
             if st.button('Simulation'):
 
 
+
                 st.session_state.slider = (slider*0.01).tolist()
-                st.session_state.portfolio_port, st.session_state.allocation_f,\
-                    st.session_state.allocation= backtest.simulation(st.session_state.input_price,st.session_state.slider,
-                                                                                                   commission,
-                                                                                                   rebal)
+                st.session_state.portfolio_port, st.session_state.allocation_f = \
+                    backtest.simulation(st.session_state.input_price,st.session_state.slider,commission,rebal,freq)
 
                 st.session_state.alloc =  st.session_state.allocation_f.copy()
-                #st.session_state.alloc[st.session_state.alloc.index.is_month_end==True] = st.session_state.allocation_f.iloc[0]
                 st.session_state.ret = (st.session_state.input_price.iloc[1:] / st.session_state.input_price.shift(1).dropna()-1)
-
                 st.session_state.contribution = (st.session_state.ret* (st.session_state.alloc.shift(1).dropna())).dropna().sum(axis=0)
 
                 if monthly == True:
@@ -169,9 +165,6 @@ if file is not None:
                                                      st.session_state.input_price_N,
                                                      st.session_state.alloc],
                                                     axis=1)
-                # st.session_state.result = st.session_state.result[(st.session_state.result.index>=st.session_state.portfolio_port.index[0]) &
-                #                                                   (st.session_state.result.index<=st.session_state.portfolio_port.index[-1])]
-
 
 
 
@@ -224,33 +217,14 @@ if file is not None:
                     st.write('MDD')
                     st.dataframe(st.session_state.drawdown.apply(lambda x: '{:.2%}'.format(x)))
 
-                    # st.download_button(
-                    #     label="MDD",
-                    #     data=st.session_state.drawdown.apply(lambda x: '{:.2%}'.format(x)).to_csv(index=True),
-                    #     mime='text/csv',
-                    #     file_name='MAX Drawdown.csv')
-
                 with col23:
                     st.write('Normalized Price')
                     st.dataframe((st.session_state.input_price_N).
                                   astype('float64').round(2))
-                    #
-                    # st.download_button(
-                    #     label="Assets",
-                    #     data=(100*st.session_state.input_price/st.session_state.input_price.iloc[0,:]).
-                    #               astype('float64').round(2).to_csv(index=True),
-                    #     mime='text/csv',
-                    #     file_name='Assets.csv')
 
                 with col24:
                     st.write('Floating Weight')
                     st.dataframe(st.session_state.alloc.applymap('{:.2%}'.format))
-                    #
-                    # st.download_button(
-                    #     label="Allocation",
-                    #     data=st.session_state.alloc.applymap('{:.2%}'.format).to_csv(index=True),
-                    #     mime='text/csv',
-                    #     file_name='Allocation.csv')
 
                 st.write(" ")
 
@@ -350,7 +324,7 @@ if file is not None:
                         label="Download",
                         data=(st.session_state.ret* (st.session_state.alloc.shift(1).dropna())).dropna().to_csv(index=True),
                         mime='text/csv',
-                        file_name='Daily Contribution.csv')
+                        file_name='Contribution.csv')
 
                 with col72:
 
