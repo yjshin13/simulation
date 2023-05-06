@@ -1,13 +1,16 @@
 import pandas as pd
 from stqdm import stqdm
 
-def cleansing(assets_data=pd.DataFrame(), alloc=list(), rebal=2):
+def cleansing(assets_data=pd.DataFrame(), alloc=list(), rebal=2, freq='Daily'):
 
     alloc = pd.DataFrame(alloc).T
 
     assets_data = pd.DataFrame(assets_data,
                            index=pd.date_range(start=assets_data.index[0],
                                                 end=assets_data.index[-1], freq='D')).fillna(method='ffill')
+
+    if freq==2:
+        assets_data = assets_data[assets_data.index.is_month_end==True]
 
     allocation = pd.DataFrame(index=assets_data.index, columns=assets_data.columns)
     allocation[:] = alloc
@@ -23,12 +26,12 @@ def cleansing(assets_data=pd.DataFrame(), alloc=list(), rebal=2):
 
     return assets_data, allocation
 
-def simulation(assets_data, allocation, commission=0, rebal='Monthly'):
+def simulation(assets_data, allocation, commission=0, rebal='Monthly', freq='Daily'):
 
     ''' commission is percent(%) scale '''
-
-    if type(allocation)==list:
-        assets_data ,allocation = cleansing(assets_data, allocation, rebal)
+    #
+    # if type(allocation)==list:
+    assets_data ,allocation = cleansing(assets_data, allocation, rebal, freq)
 
     portfolio = pd.DataFrame(index=assets_data.index, columns=['NAV']).squeeze()
     portfolio = portfolio[portfolio.index >= allocation.index[0]]
@@ -37,8 +40,6 @@ def simulation(assets_data, allocation, commission=0, rebal='Monthly'):
     alloc_amount = pd.DataFrame(index=assets_data.index, columns=assets_data.columns)
     alloc_amount = alloc_amount[alloc_amount.index>=portfolio.index[0]]
     portfolio[0] = 100
-
-
 
     k = 0
     j_rebal = 0
@@ -89,7 +90,7 @@ def simulation(assets_data, allocation, commission=0, rebal='Monthly'):
 
     # portfolio.index = portfolio.index.date
 
-    return portfolio.astype('float64').round(4), alloc_float.dropna(), allocation
+    return portfolio.astype('float64').round(4), alloc_float.dropna()
 
 def drawdown(nav: pd.Series):
     """
