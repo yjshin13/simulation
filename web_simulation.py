@@ -131,42 +131,42 @@ if file is not None:
 
             #########################[Graph Insert]#####################################
 
-            if st.button('Simulation'):
+        if st.button('Simulation'):
 
 
 
-                st.session_state.slider = (slider*0.01).tolist()
-                st.session_state.portfolio_port, st.session_state.allocation_f = \
-                    backtest.simulation(st.session_state.input_price,st.session_state.slider,commission,rebal,freq)
+            st.session_state.slider = (slider*0.01).tolist()
+            st.session_state.portfolio_port, st.session_state.allocation_f = \
+                backtest.simulation(st.session_state.input_price,st.session_state.slider,commission,rebal,freq)
 
-                st.session_state.alloc =  st.session_state.allocation_f.copy()
-                st.session_state.ret = (st.session_state.input_price.iloc[1:] / st.session_state.input_price.shift(1).dropna()-1)
-                st.session_state.contribution = (st.session_state.ret* (st.session_state.alloc.shift(1).dropna())).dropna().sum(axis=0)
+            st.session_state.alloc =  st.session_state.allocation_f.copy()
+            st.session_state.ret = (st.session_state.input_price.iloc[1:] / st.session_state.input_price.shift(1).dropna()-1)
+            st.session_state.contribution = (st.session_state.ret* (st.session_state.alloc.shift(1).dropna())).dropna().sum(axis=0)
 
-                if monthly == True:
-                    st.session_state.portfolio_port = st.session_state.portfolio_port[st.session_state.portfolio_port.index.is_month_end==True]
-
-
-                st.session_state.drawdown = backtest.drawdown(st.session_state.portfolio_port)
-                st.session_state.input_price_N = st.session_state.input_price[(st.session_state.input_price.index>=st.session_state.portfolio_port.index[0]) &
-                                                                            (st.session_state.input_price.index<=st.session_state.portfolio_port.index[-1])]
-                st.session_state.input_price_N = 100 * st.session_state.input_price_N / st.session_state.input_price_N.iloc[0, :]
+            if monthly == True:
+                st.session_state.portfolio_port = st.session_state.portfolio_port[st.session_state.portfolio_port.index.is_month_end==True]
 
 
-                st.session_state.portfolio_port.index = st.session_state.portfolio_port.index.date
-                st.session_state.drawdown.index = st.session_state.drawdown.index.date
-                st.session_state.input_price_N.index = st.session_state.input_price_N.index.date
-                st.session_state.alloc.index = st.session_state.alloc.index.date
+            st.session_state.drawdown = backtest.drawdown(st.session_state.portfolio_port)
+            st.session_state.input_price_N = st.session_state.input_price[(st.session_state.input_price.index>=st.session_state.portfolio_port.index[0]) &
+                                                                        (st.session_state.input_price.index<=st.session_state.portfolio_port.index[-1])]
+            st.session_state.input_price_N = 100 * st.session_state.input_price_N / st.session_state.input_price_N.iloc[0, :]
+
+
+            st.session_state.portfolio_port.index = st.session_state.portfolio_port.index.date
+            st.session_state.drawdown.index = st.session_state.drawdown.index.date
+            st.session_state.input_price_N.index = st.session_state.input_price_N.index.date
+            st.session_state.alloc.index = st.session_state.alloc.index.date
 
 
 
-                st.session_state.result = pd.concat([st.session_state.portfolio_port,
-                                                     st.session_state.drawdown,
-                                                     st.session_state.input_price_N,
-                                                     st.session_state.alloc],
-                                                    axis=1)
+            st.session_state.result = pd.concat([st.session_state.portfolio_port,
+                                                 st.session_state.drawdown,
+                                                 st.session_state.input_price_N,
+                                                 st.session_state.alloc],
+                                                axis=1)
 
-
+        with st.expander('Result', expanded=True):
 
             if 'slider' in st.session_state:
 
