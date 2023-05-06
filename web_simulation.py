@@ -140,8 +140,9 @@ if file is not None:
                 backtest.simulation(st.session_state.input_price,st.session_state.slider,commission,rebal,freq)
 
             st.session_state.alloc =  st.session_state.allocation_f.copy()
-            st.session_state.ret = (st.session_state.input_price.iloc[1:] / st.session_state.input_price.shift(1).dropna()-1)
-            st.session_state.contribution = (st.session_state.ret* (st.session_state.alloc.shift(1).dropna())).dropna().sum(axis=0)
+            st.session_state.ret = (st.session_state.input_price.iloc[1:] / st.session_state.input_price.shift(1).dropna())-1
+            st.session_state.contribution = ((st.session_state.ret* (st.session_state.alloc.shift(1).dropna())).dropna()+1).cumprod(axis=0)-1
+            st.session_state.contribution_total = st.session_state.contribution.iloc[-1,:]
 
             if monthly == True:
                 st.session_state.portfolio_port = st.session_state.portfolio_port[st.session_state.portfolio_port.index.is_month_end==True]
@@ -270,12 +271,12 @@ if file is not None:
                 with col_a:
 
                     st.write("Performance Contribution")
-                    st.session_state.contribution.index = pd.Index(st.session_state.contribution.index.map(lambda x: str(x)[:7]))
+                    st.session_state.contribution_total.index = pd.Index(st.session_state.contribution_total.index.map(lambda x: str(x)[:7]))
 
 
 
-                    x = (st.session_state.contribution * 100)
-                    y = st.session_state.contribution.index
+                    x = (st.session_state.contribution_total * 100)
+                    y = st.session_state.contribution_total.index
 
                     fig_bar, ax_bar = plt.subplots(figsize=(18, 11))
                     width = 0.75  # the width of the bars
@@ -322,7 +323,7 @@ if file is not None:
 
                     st.download_button(
                         label="Download",
-                        data=(st.session_state.ret* (st.session_state.alloc.shift(1).dropna())).dropna().to_csv(index=True),
+                        data=st.session_state.contribution.to_csv(index=True),
                         mime='text/csv',
                         file_name='Contribution.csv')
 
