@@ -303,7 +303,7 @@ if file is not None:
                     st.session_state.corr.columns = st.session_state.corr.index
                     # st.session_state.corr.columns = pd.MultiIndex.from_tuples([tuple(map(lambda x: str(x)[:7], col)) for col in st.session_state.corr.columns])
 
-                    heatmap = sns.heatmap(st.session_state.corr, vmin=-1, vmax=1, annot=True, cmap='BrBG')
+                    heatmap = sns.heatmap(st.session_state.corr, vmin=-1, vmax=1, annot=True, cmap='coolwarm')
 
                     # heatmap.set_title('Correlation Heatmap', fontdict={'fontsize': 20}, pad=12)
 
